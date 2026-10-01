@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
     'setup_fee_cents',
     'currency',
     'billing_period',
+    'minutos_mensuales',
 ])]
 class Plan extends Model
 {

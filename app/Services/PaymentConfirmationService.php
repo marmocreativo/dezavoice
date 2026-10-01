@@ -146,7 +146,8 @@ class PaymentConfirmationService
                 'raw_payload' => $rawPayload,
             ]);
 
-            $subscription->update(['status' => 'active']);
+            // Cada factura pagada abre un periodo nuevo: los minutos usados vuelven a cero.
+            $subscription->update(['status' => 'active', 'minutos_utilizados' => 0]);
 
             if ($isFirstInvoice) {
                 $this->confirmFirstPayment($opportunity, $payment, $amountCents, $currency);

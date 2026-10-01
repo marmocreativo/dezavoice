@@ -35,6 +35,17 @@ class User extends Authenticatable implements FilamentUser
         return $this->memberships()->active()->exists();
     }
 
+    public function canAccessAdmin(): bool
+    {
+        return $this->activeMemberships()->where('role', 'deza_admin')->exists();
+    }
+
+    /** Membresía de administrador activa (para dejar constancia en auditoría). */
+    public function adminMembership(): ?Membership
+    {
+        return $this->activeMemberships()->where('role', 'deza_admin')->first();
+    }
+
     protected function casts(): array
     {
         return [

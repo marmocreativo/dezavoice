@@ -13,10 +13,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn () => null);
+        // API/JSON → 401 limpio; navegador → login del panel Blade
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson() ? null : route('login')
+        );
+
+        // Usuario ya autenticado que visita /login
+        $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
 
         $middleware->alias([
             'resolve.membership' => \App\Http\Middleware\ResolveMembership::class,
+            'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

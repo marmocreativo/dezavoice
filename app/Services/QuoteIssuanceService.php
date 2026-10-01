@@ -103,6 +103,9 @@ class QuoteIssuanceService
                 'opportunity_id' => $opportunity->id,
                 'plan_id' => $plan->id,
                 'status' => 'pending_payment',
+                // Snapshot de lo contratado: cambiar el plan después no altera esta suscripción.
+                'minutos_mensuales' => $plan->minutos_mensuales,
+                'minutos_utilizados' => 0,
                 'started_at' => now(),
             ]);
 

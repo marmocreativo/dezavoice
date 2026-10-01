@@ -105,7 +105,7 @@ class PersonInvitationService
         'seller' => 'Vendedor',
     ];
 
-    private function sendWelcomeEmail(User $user, string $role, string $temporaryPassword): void
+    public function sendWelcomeEmail(User $user, string $role, string $temporaryPassword): void
     {
         $loginUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/login';
         $roleLabel = self::ROLE_LABELS[$role] ?? $role;

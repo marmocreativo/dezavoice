@@ -77,6 +77,21 @@ class SalesProspect extends Model
         return $this->hasMany(Opportunity::class);
     }
 
+    /** Suscripciones del prospecto, a través de sus oportunidades. */
+    public function subscriptions()
+    {
+        return $this->hasManyThrough(Subscription::class, Opportunity::class, 'sales_prospect_id', 'opportunity_id');
+    }
+
+    /** La suscripción vigente: la activa o, si no hay, la más reciente. */
+    public function currentSubscription(): ?Subscription
+    {
+        $subscriptions = $this->relationLoaded('subscriptions') ? $this->subscriptions : $this->subscriptions()->get();
+
+        return $subscriptions->firstWhere('status', 'active')
+            ?? $subscriptions->sortByDesc('created_at')->first();
+    }
+
     public function statusHistory()
     {
         return $this->hasMany(ProspectStatusHistory::class);

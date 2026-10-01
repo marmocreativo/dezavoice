@@ -41,4 +41,16 @@ class Territory extends Model
     {
         return $this->belongsTo(Membership::class, 'assigned_manager_membership_id');
     }
+
+    public function salesTeams()
+    {
+        return $this->hasMany(SalesTeam::class);
+    }
+
+    public function supervisors()
+    {
+        return $this->hasMany(Membership::class)
+            ->where('role', 'supervisor')
+            ->where('status', 'active');
+    }
 }

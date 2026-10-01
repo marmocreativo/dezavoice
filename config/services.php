@@ -38,5 +38,12 @@ return [
         'secret' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
+    'retell' => [
+        'api_key' => env('RETELL_API_KEY'),
+        'base_url' => env('RETELL_BASE_URL', 'https://api.retellai.com'),
+        'web_test_agent_id' => env('RETELL_WEB_TEST_AGENT_ID'),
+        'web_test_agent_version' => env('RETELL_WEB_TEST_AGENT_VERSION'),
+        'web_test_max_minutes' => (int) env('RETELL_WEB_TEST_MAX_MINUTES', 5),
+    ],
 
 ];

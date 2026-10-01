@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\ProspectAssignmentController;
 use App\Http\Controllers\Api\StripeWebhookController;
+use App\Http\Controllers\Api\RetellFunctionController;
+use App\Http\Controllers\Api\RetellWebhookController;
+use App\Http\Middleware\VerifyRetellSignature;
 use App\Http\Controllers\Api\PaymentRefundController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DashboardController;
@@ -33,6 +36,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/v1/webhooks/stripe', [StripeWebhookController::class, 'handle']);
+
+Route::middleware(VerifyRetellSignature::class)->group(function () {
+    Route::post('/v1/webhooks/retell', [RetellWebhookController::class, 'handle']);
+    Route::post('/v1/retell/functions/registrar-pedido', [RetellFunctionController::class, 'registrarPedido']);
+});
 Route::post('/v1/auth/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(function () {

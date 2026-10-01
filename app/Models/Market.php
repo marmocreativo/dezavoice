@@ -56,4 +56,16 @@ class Market extends Model
     {
         return $this->hasMany(Membership::class);
     }
+
+    public function managers()
+    {
+        return $this->hasMany(Membership::class)
+            ->where('role', 'manager')
+            ->where('status', 'active');
+    }
+
+    public function plans()
+    {
+        return $this->hasMany(Plan::class);
+    }
 }

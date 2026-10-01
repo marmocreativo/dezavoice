@@ -10,7 +10,7 @@
 error_reporting(E_ALL);
 
 // ── Protección básica de acceso ─────────────────────────────────────────
-define('TOOLKIT_SECRET', 'CAMBIA-ESTO-POR-ALGO-LARGO-Y-UNICO');
+define('TOOLKIT_SECRET', 'R9AAbWSZeZRhccQmv45EdcfGPkYmTTxB62i');
 
 if (($_GET['key'] ?? $_POST['key'] ?? '') !== TOOLKIT_SECRET) {
     http_response_code(404);
@@ -21,7 +21,7 @@ ini_set('display_errors', 1);
 
 // ── CONFIG: editar por proyecto ────────────────────────────────────────────
 define('TOOL_NAME', 'Deploy Toolkit');           // Nombre mostrado en el header
-define('APP_ROOT',    dirname(__DIR__, 2) . '/system'); // Ajusta la ruta al proyecto Laravel
+define('APP_ROOT',    dirname(__DIR__, 2) . '/sales.dezavoice.com/system'); // Ajusta la ruta al proyecto Laravel
 define('PUBLIC_ROOT', __DIR__);
 
 // Subcarpetas del disco "public" que quieras auditar en la sección Storage.
@@ -308,6 +308,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $laravel
                 break;
 
             // ── RUTAS ─────────────────────────────────────────────────────
+            // ── RETELL: CONFIGURACIÓN ─────────────────────────────────────
+            case 'retell':
+                $cfg   = config('services.retell');
+                $key   = (string) config('services.retell.api_key');
+                $agent = (string) config('services.retell.web_test_agent_id');
+
+                echo sprintf("  %-36s %s\n", "bloque 'retell' en services.php", is_array($cfg) ? ok('existe') : err('NO existe: falta en config/services.php'));
+                echo sprintf("  %-36s %s\n", 'api_key (config)', $key !== '' ? ok('configurada, ' . strlen($key) . ' caracteres') : err('vacía'));
+                echo sprintf("  %-36s %s\n", 'web_test_agent_id (config)', $agent !== '' ? ok(substr($agent, 0, 12) . '…') : err('vacío'));
+                echo sprintf("  %-36s %s\n", 'agent_version', config('services.retell.web_test_agent_version') ?: info('sin definir'));
+                echo sprintf("  %-36s %s\n", 'max_minutes', config('services.retell.web_test_max_minutes') ?? info('sin definir'));
+                echo sprintf("  %-36s %s\n", 'APP_URL', config('app.url'));
+                echo sprintf("  %-36s %s\n", 'URL del webhook', rtrim((string) config('app.url'), '/') . '/api/v1/webhooks/retell');
+                echo sprintf("  %-36s %s\n", 'config cacheada', app()->configurationIsCached() ? warn('sí: los cambios del .env no se leen hasta limpiar caché') : ok('no'));
+
+                echo "\n<strong>Archivo .env en el servidor</strong>\n";
+                $envPath = APP_ROOT . '/.env';
+                $envText = is_file($envPath) ? (string) file_get_contents($envPath) : '';
+                echo sprintf("  %-36s %s\n", 'lectura de .env', $envText !== '' ? ok('existe') : err('no se pudo leer ' . $envPath));
+                foreach (['RETELL_API_KEY', 'RETELL_WEB_TEST_AGENT_ID', 'RETELL_WEB_TEST_AGENT_VERSION', 'RETELL_WEB_TEST_MAX_MINUTES'] as $name) {
+                    $found = preg_match('/^\s*' . $name . '\s*=\s*(\S.*)$/m', $envText);
+                    echo sprintf("  %-36s %s\n", $name, $found ? ok('presente en .env') : err('no está en .env'));
+                }
+                break;
+
+            // ── RETELL: PROBAR LLAVE Y AGENTE ─────────────────────────────
+            case 'retell_test':
+                try {
+                    $data = app(App\Services\Retell\RetellApi::class)->createWebCall([
+                        'agent_id' => config('services.retell.web_test_agent_id'),
+                    ]);
+                    echo ok('Retell aceptó la llave y el agente') . "\n";
+                    echo "  call_id: " . ($data['call_id'] ?? '?') . "\n";
+                    echo info('La llamada no se conecta; su token caduca en 30 segundos.') . "\n";
+                } catch (Throwable $e) {
+                    echo err('Retell respondió con error') . "\n  " . $e->getMessage() . "\n";
+                    echo info('401 = llave inválida · 422 = agente inexistente o de otra cuenta') . "\n";
+                }
+                break;
+
             case 'routes':
                 $routes = collect(Illuminate\Support\Facades\Route::getRoutes())
                     ->map(function ($route) {
@@ -516,6 +556,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $laravel
                 <span class="icon">📄</span>
                 <span class="label">Ver api.php</span>
                 <span class="desc">Contenido real en servidor</span>
+            </button>
+        </form>
+
+        <form class="action-form" method="POST">
+    <input type="hidden" name="key" value="<?= htmlspecialchars($_GET['key'] ?? '') ?>">
+            <button type="submit" name="action" value="retell">
+                <span class="icon">📞</span>
+                <span class="label">Retell: configuración</span>
+                <span class="desc">Variables, caché y URL del webhook</span>
+            </button>
+        </form>
+
+        <form class="action-form" method="POST">
+    <input type="hidden" name="key" value="<?= htmlspecialchars($_GET['key'] ?? '') ?>">
+            <button type="submit" name="action" value="retell_test">
+                <span class="icon">🔑</span>
+                <span class="label">Retell: probar llave</span>
+                <span class="desc">Crea una llamada de prueba (no se conecta)</span>
             </button>
         </form>
 

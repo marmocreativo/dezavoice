@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
     'started_at',
     'current_period_end',
     'canceled_at',
+    'minutos_mensuales',
+    'minutos_utilizados',
 ])]
 class Subscription extends Model
 {
@@ -29,6 +31,7 @@ class Subscription extends Model
             'started_at' => 'datetime',
             'current_period_end' => 'datetime',
             'canceled_at' => 'datetime',
+            'minutos_utilizados' => 'decimal:2',
         ];
     }
 
