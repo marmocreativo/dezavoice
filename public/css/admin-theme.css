@@ -1,0 +1,49 @@
+.dark .fi-body {
+    background-color: #091925;
+}
+
+.dark .fi-sidebar {
+    background-color: #0C1A28;
+}
+
+.dark .fi-topbar {
+    background-color: #0C1A28;
+}
+
+.dark .fi-main {
+    background-color: #091925;
+}
+
+.dark .fi-section {
+    background-color: #0C1A28;
+}
+
+.dark .fi-ta-ctn {
+    background-color: #0C1A28;
+}
+
+.dark .fi-card {
+    background-color: #0C1A28;
+}
+
+.dark .fi-modal-window {
+    background-color: #0C1A28;
+}
+
+.dark .fi-wi-stats-overview-stat {
+    background-color: #0C1A28;
+}
+
+.dark .fi-wi-widget {
+    background-color: #0C1A28;
+}
+
+.dark .fi-ta-header-toolbar {
+    background-color: #0C1A28;
+}
+
+.fi-simple-layout .fi-simple-main {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
