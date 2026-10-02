@@ -16,5 +16,7 @@
         @endif
 
         @include('admin.plans._form', ['isEdit' => true, 'action' => route('admin.plans.update', $plan->uuid)])
+
+        @include('admin.plans._commissions')
     </div>
 @endsection

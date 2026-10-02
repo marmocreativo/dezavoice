@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\ProspectAssignmentController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\RetellFunctionController;
+use App\Http\Controllers\Api\RetellInboundController;
 use App\Http\Controllers\Api\RetellWebhookController;
 use App\Http\Middleware\VerifyRetellSignature;
 use App\Http\Controllers\Api\PaymentRefundController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\QuoteIssuanceController;
 use App\Http\Controllers\Api\ClientSubscriptionController;
+use App\Http\Controllers\Api\ClientMessageController;
 
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
@@ -39,9 +41,11 @@ Route::post('/v1/webhooks/stripe', [StripeWebhookController::class, 'handle']);
 
 Route::middleware(VerifyRetellSignature::class)->group(function () {
     Route::post('/v1/webhooks/retell', [RetellWebhookController::class, 'handle']);
+    Route::post('/v1/webhooks/retell/inbound', [RetellInboundController::class, 'handle']);
     Route::post('/v1/retell/functions/registrar-pedido', [RetellFunctionController::class, 'registrarPedido']);
 });
 Route::post('/v1/auth/login', [AuthController::class, 'login']);
+Route::get('/v1/push/public-key', [DeviceTokenController::class, 'publicKey']);
 
 Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -100,6 +104,8 @@ Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(f
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{uuid}/read', [NotificationController::class, 'markRead']);
     Route::post('/devices', [DeviceTokenController::class, 'store']);
+    Route::delete('/devices', [DeviceTokenController::class, 'destroy']);
+    Route::post('/devices/test', [DeviceTokenController::class, 'test'])->middleware('throttle:6,1');
     Route::post('/change-requests', [ChangeRequestController::class, 'store']);
 
     Route::get('/commissions', [CommissionController::class, 'index']);
@@ -126,6 +132,7 @@ Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(f
     Route::get('/markets/{market:uuid}/managers', [MarketController::class, 'managers']);
 
     Route::get('/client/subscription', [ClientSubscriptionController::class, 'show']);
+    Route::get('/client/messages', [ClientMessageController::class, 'index']);
     
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);

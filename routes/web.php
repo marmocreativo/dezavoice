@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Admin\AgentProfileController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\CommissionPayoutController;
 use App\Http\Controllers\Admin\ClientMessageController;
 use App\Http\Controllers\Admin\CommissionReviewController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MarketController;
+use App\Http\Controllers\Admin\PhoneNumberController;
+use App\Http\Controllers\Admin\PlanCommissionController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ProspectController;
 use App\Http\Controllers\Admin\SubscriptionController;
@@ -52,6 +55,12 @@ Route::middleware(['auth', 'admin.access'])
         Route::post('markets/{market:uuid}/plans', [PlanController::class, 'store'])->name('markets.plans.store');
         Route::get('plans/{plan:uuid}/edit', [PlanController::class, 'edit'])->name('plans.edit');
         Route::put('plans/{plan:uuid}', [PlanController::class, 'update'])->name('plans.update');
+        Route::put('plans/{plan:uuid}/commissions', [PlanCommissionController::class, 'update'])->name('plans.commissions.update');
+
+        Route::get('commissions', [CommissionPayoutController::class, 'index'])->name('commissions.index');
+        Route::get('commissions/payouts', [CommissionPayoutController::class, 'history'])->name('commissions.payouts');
+        Route::post('commissions/payouts', [CommissionPayoutController::class, 'store'])->name('commissions.pay');
+        Route::post('commissions/payouts/{payout:uuid}/void', [CommissionPayoutController::class, 'void'])->name('commissions.void');
         Route::delete('plans/{plan:uuid}', [PlanController::class, 'destroy'])->name('plans.destroy');
 
         Route::get('prospects', [ProspectController::class, 'index'])->name('prospects.index');
@@ -64,6 +73,11 @@ Route::middleware(['auth', 'admin.access'])
 
         Route::get('organizations/{organization:uuid}/agent', [AgentProfileController::class, 'edit'])->name('organizations.agent.edit');
         Route::put('organizations/{organization:uuid}/agent', [AgentProfileController::class, 'update'])->name('organizations.agent.update');
+
+        Route::get('organizations/{organization:uuid}/phones', [PhoneNumberController::class, 'index'])->name('organizations.phones.index');
+        Route::post('organizations/{organization:uuid}/phones', [PhoneNumberController::class, 'store'])->name('organizations.phones.store');
+        Route::patch('phones/{phone:uuid}/toggle', [PhoneNumberController::class, 'toggle'])->name('phones.toggle');
+        Route::delete('phones/{phone:uuid}', [PhoneNumberController::class, 'destroy'])->name('phones.destroy');
 
         Route::get('subscriptions/{subscription:uuid}/edit', [SubscriptionController::class, 'edit'])->name('subscriptions.edit');
         Route::put('subscriptions/{subscription:uuid}', [SubscriptionController::class, 'update'])->name('subscriptions.update');

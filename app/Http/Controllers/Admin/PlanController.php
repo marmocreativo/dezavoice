@@ -48,6 +48,7 @@ class PlanController extends Controller
             'plan' => $plan,
             'market' => $plan->market,
             'inUse' => $plan->opportunities()->exists() || $plan->subscriptions()->exists(),
+            'commissions' => app(\App\Services\CommissionRuleService::class)->overview($plan),
         ]);
     }
 

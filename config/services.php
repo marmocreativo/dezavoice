@@ -44,6 +44,14 @@ return [
         'web_test_agent_id' => env('RETELL_WEB_TEST_AGENT_ID'),
         'web_test_agent_version' => env('RETELL_WEB_TEST_AGENT_VERSION'),
         'web_test_max_minutes' => (int) env('RETELL_WEB_TEST_MAX_MINUTES', 5),
+        'phone_agent_id' => env('RETELL_PHONE_AGENT_ID'),
+        'phone_agent_version' => env('RETELL_PHONE_AGENT_VERSION'),
+        'phone_max_minutes' => (int) env('RETELL_PHONE_MAX_MINUTES', 10),
+    ],
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:soporte@dezavoice.com'),
     ],
 
 ];

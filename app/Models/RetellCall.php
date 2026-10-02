@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
     'minutos_consumidos',
     'minutos_aplicados_at',
     'disconnection_reason',
+    'from_number',
+    'to_number',
 ])]
 class RetellCall extends Model
 {

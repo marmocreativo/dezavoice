@@ -107,6 +107,7 @@
                                     <div class="flex items-center gap-4">
                                         <a href="{{ route('admin.organizations.edit', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Editar cliente</a>
                                         <a href="{{ route('admin.organizations.agent.edit', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Menú del agente</a>
+                                        <a href="{{ route('admin.organizations.phones.index', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Números</a>
                                     </div>
                                 </div>
                                 <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">

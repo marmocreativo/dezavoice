@@ -348,6 +348,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $laravel
                 }
                 break;
 
+            // ── WEB PUSH: ESTADO ──────────────────────────────────────────
+            case 'webpush':
+                $cfg = config('services.webpush');
+
+                echo sprintf("  %-34s %s\n", 'minishlink/web-push', class_exists(Minishlink\WebPush\WebPush::class) ? ok('instalada') : err('NO instalada: sube vendor/ tras composer require'));
+
+                foreach (['openssl' => true, 'curl' => true, 'mbstring' => true, 'gmp' => false, 'bcmath' => false] as $ext => $required) {
+                    echo sprintf("  %-34s %s\n", "extensión {$ext}", extension_loaded($ext)
+                        ? ok('activa')
+                        : ($required ? err('FALTA') : warn('no activa (opcional, solo rendimiento)')));
+                }
+
+                echo sprintf("  %-34s %s\n", 'VAPID public key', filled($cfg['public_key'] ?? null) ? ok('configurada') : err('vacía'));
+                echo sprintf("  %-34s %s\n", 'VAPID private key', filled($cfg['private_key'] ?? null) ? ok('configurada') : err('vacía'));
+                echo sprintf("  %-34s %s\n", 'VAPID subject', $cfg['subject'] ?? err('sin definir'));
+                echo sprintf("  %-34s %s\n", 'dispositivos registrados', Illuminate\Support\Facades\DB::table('device_tokens')->whereNull('deleted_at')->count());
+                break;
+
+            // ── WEB PUSH: GENERAR CLAVES VAPID ────────────────────────────
+            case 'vapid_generate':
+                if (! class_exists(Minishlink\WebPush\VAPID::class)) {
+                    echo err('La librería minishlink/web-push no está instalada.') . "\n";
+                    break;
+                }
+
+                $keys = Minishlink\WebPush\VAPID::createVapidKeys();
+                echo ok('Claves generadas. Cópialas a tu .env y limpia caché.') . "\n\n";
+                echo "VAPID_PUBLIC_KEY={$keys['publicKey']}\n";
+                echo "VAPID_PRIVATE_KEY={$keys['privateKey']}\n\n";
+                echo warn('Si ya había claves, cambiarlas invalida las suscripciones: cada usuario debe volver a activar sus notificaciones.') . "\n";
+                echo warn('La clave privada quedó en pantalla: elimina el toolkit al terminar.') . "\n";
+                break;
+
             case 'routes':
                 $routes = collect(Illuminate\Support\Facades\Route::getRoutes())
                     ->map(function ($route) {
@@ -574,6 +607,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $laravel
                 <span class="icon">🔑</span>
                 <span class="label">Retell: probar llave</span>
                 <span class="desc">Crea una llamada de prueba (no se conecta)</span>
+            </button>
+        </form>
+
+        <form class="action-form" method="POST">
+    <input type="hidden" name="key" value="<?= htmlspecialchars($_GET['key'] ?? '') ?>">
+            <button type="submit" name="action" value="webpush">
+                <span class="icon">🔔</span>
+                <span class="label">Web Push: estado</span>
+                <span class="desc">Librería, extensiones y claves VAPID</span>
+            </button>
+        </form>
+
+        <form class="action-form" method="POST" onsubmit="return confirm('Esto genera claves nuevas. ¿Continuar?');">
+    <input type="hidden" name="key" value="<?= htmlspecialchars($_GET['key'] ?? '') ?>">
+            <button type="submit" name="action" value="vapid_generate">
+                <span class="icon">🗝️</span>
+                <span class="label">Web Push: claves VAPID</span>
+                <span class="desc">Genera un par nuevo para el .env</span>
             </button>
         </form>
 

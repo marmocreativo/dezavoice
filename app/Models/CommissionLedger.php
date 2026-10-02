@@ -83,6 +83,12 @@ class CommissionLedger extends Model
         return $this->belongsTo(Membership::class, 'created_by_membership_id');
     }
 
+    /** El pago activo en el que ya se incluyó este asiento (null si sigue sin pagar). */
+    public function payoutItem()
+    {
+        return $this->hasOne(CommissionPayoutEntry::class, 'commission_ledger_id');
+    }
+
     public function scopeForMembership($query, int $membershipId)
     {
         return $query->where('membership_id', $membershipId);

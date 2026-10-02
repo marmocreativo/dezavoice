@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\RetellCall;
+use App\Services\OrderNotificationService;
 use App\Services\Retell\RetellCallService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,13 @@ class RetellFunctionController extends Controller
 
         $args = $validator->validated();
 
-        $this->calls->registerOrder($call, $args['resumen_pedido'], isset($args['total_soles']) ? (float) $args['total_soles'] : null);
+        $message = $this->calls->registerOrder($call, $args['resumen_pedido'], isset($args['total_soles']) ? (float) $args['total_soles'] : null);
+
+        // Solo la primera vez: un reintento de Retell actualiza el pedido pero no repite el aviso.
+        // Se envía después de responderle a Retell, para que la función no espere al servicio de push.
+        if ($message->wasRecentlyCreated) {
+            app()->terminating(fn () => app(OrderNotificationService::class)->notifyNewOrder($message));
+        }
 
         // Sin número de pedido a propósito: el prompt prohíbe inventarlos.
         return response()->json(['ok' => true, 'message' => 'Pedido de demostración registrado.']);
