@@ -25,6 +25,8 @@ class AgentProfileRequest extends FormRequest
     {
         return [
             'nombre_negocio' => ['nullable', 'string', 'max:150'],
+            'descripcion' => ['nullable', 'string', 'max:1000'],
+            'tipo_solicitud' => ['required', 'in:'.implode(',', array_keys(\App\Models\AgentProfile::REQUEST_TYPES))],
             'direccion' => ['nullable', 'string', 'max:255'],
             'horario' => ['nullable', 'string', 'max:255'],
             'tiempo_preparacion' => ['nullable', 'string', 'max:100'],
@@ -39,6 +41,8 @@ class AgentProfileRequest extends FormRequest
         return [
             'string' => ':Attribute debe ser texto.',
             'max' => ':Attribute no puede superar :max caracteres.',
+            'required' => 'El campo :attribute es obligatorio.',
+            'in' => ':Attribute no es válido.',
         ];
     }
 
@@ -46,6 +50,8 @@ class AgentProfileRequest extends FormRequest
     {
         return [
             'nombre_negocio' => 'nombre del negocio',
+            'descripcion' => 'descripción',
+            'tipo_solicitud' => 'tipo de solicitud',
             'direccion' => 'dirección',
             'horario' => 'horario',
             'tiempo_preparacion' => 'tiempo de preparación',

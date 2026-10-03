@@ -48,6 +48,9 @@ class ClientMessageController extends Controller
             ];
         }
 
-        return ClientMessageResource::collection($messages)->additional(['usage' => $usage]);
+        return ClientMessageResource::collection($messages)->additional([
+            'usage' => $usage,
+            'labels' => \App\Models\AgentProfile::requestLabelsFor(\App\Models\Organization::find($actor->organization_id)),
+        ]);
     }
 }

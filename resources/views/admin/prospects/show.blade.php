@@ -18,6 +18,7 @@
         <div class="mt-1 flex flex-wrap items-center gap-3">
             <h2 class="text-2xl font-semibold text-slate-900">{{ $prospect->business_name }}</h2>
             <x-admin.status-pill :value="$prospect->status" />
+            <a href="{{ route('admin.prospects.delete', $prospect->uuid) }}" class="ml-auto text-xs font-medium text-red-600 hover:text-red-800">Eliminar definitivamente…</a>
         </div>
         <p class="mt-1 text-sm text-slate-500">
             @if ($prospect->market)
@@ -106,7 +107,7 @@
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cliente facturable</p>
                                     <div class="flex items-center gap-4">
                                         <a href="{{ route('admin.organizations.edit', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Editar cliente</a>
-                                        <a href="{{ route('admin.organizations.agent.edit', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Menú del agente</a>
+                                        <a href="{{ route('admin.organizations.agent.edit', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Información del agente</a>
                                         <a href="{{ route('admin.organizations.phones.index', $organization->uuid) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">Números</a>
                                     </div>
                                 </div>
@@ -176,6 +177,14 @@
                             <input type="hidden" name="mode" value="repair">
                             <button type="submit" class="rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-600">Revisar comisiones</button>
                         </form>
+                        <form method="POST" action="{{ route('admin.prospects.commissions.review', $prospect->uuid) }}"
+                              data-confirm="Se generarán las comisiones faltantes con las reglas vigentes HOY, aunque la venta sea anterior a su fecha de inicio. ¿Continuar?">
+                            @csrf
+                            <input type="hidden" name="mode" value="repair">
+                            <input type="hidden" name="rules" value="current">
+                            <button type="submit" title="Aplica las reglas vigentes hoy aunque la venta sea anterior"
+                                    class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Reglas de hoy</button>
+                        </form>
                     </div>
                 </div>
 
@@ -183,7 +192,7 @@
                 @if ($review)
                     <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p class="text-sm font-semibold text-slate-800">
-                            {{ $review['repair'] ? 'Resultado de la revisión (con reparación)' : 'Resultado de la revisión (sin cambios)' }}
+                            {{ $review['repair'] ? 'Resultado de la revisión (con reparación)' : 'Resultado de la revisión (sin cambios)' }}@if (($review['rules'] ?? 'payment') === 'current') · reglas vigentes hoy @endif
                         </p>
 
                         @foreach ($sectionLabels as $sectionKey => $sectionLabel)

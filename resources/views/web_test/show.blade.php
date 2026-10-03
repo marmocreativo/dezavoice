@@ -26,7 +26,7 @@
 
         @if ($menuMissing)
             <p class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Este cliente aún no tiene menú configurado: el agente no podrá tomar pedidos.
+                Este cliente aún no tiene catálogo de productos o servicios configurado: el agente no podrá responder con precisión.
             </p>
         @endif
 
@@ -34,8 +34,8 @@
             <p class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ $blockReason }}</p>
         @else
             <p class="mt-5 text-sm text-slate-600">
-                Permite el micrófono y habla con la asistente. Prueba, por ejemplo, pidiendo un cuarto de pollo a la brasa,
-                una Inca Kola y dos ajíes adicionales, y confirma el pedido.
+                Permite el micrófono y habla con el agente como lo haría un cliente de este negocio: pregunta por sus productos o servicios,
+                haz una solicitud (un pedido, una cita…) y confírmala al final.
             </p>
         @endif
 

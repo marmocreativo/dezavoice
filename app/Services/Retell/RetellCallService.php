@@ -24,12 +24,21 @@ class RetellCallService
     }
 
     /** Guarda el pedido confirmado. Idempotente por llamada. */
-    public function registerOrder(RetellCall $call, string $resumen, ?float $total): ClientMessage
+    public function registerOrder(RetellCall $call, string $resumen, ?float $total, ?string $contacto = null): ClientMessage
     {
-        $texto = "Pedido confirmado (demostración)\n".trim($resumen);
+        $organization = $call->organization;
+        $labels = \App\Models\AgentProfile::requestLabelsFor($organization);
+        $suffix = $call->canal === 'web_test' ? ' (prueba)' : '';
+
+        $texto = "{$labels['label']}{$suffix}\n".trim($resumen);
+
+        if (filled($contacto)) {
+            $texto .= "\nContacto: ".trim($contacto);
+        }
 
         if ($total !== null) {
-            $texto .= "\nTotal: ".number_format($total, 2).' soles';
+            $currencyWord = \App\Models\AgentProfile::currencyWords(\App\Models\Market::find($organization?->market_id)?->currency)[0];
+            $texto .= "\nTotal: ".number_format($total, 2).' '.$currencyWord;
         }
 
         return ClientMessage::updateOrCreate(

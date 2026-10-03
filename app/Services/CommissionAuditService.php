@@ -20,8 +20,8 @@ use RuntimeException;
 
 /**
  * Revisa que una venta esté registrada, pagada y con sus comisiones, y repara lo que falta.
- * Las reglas de cálculo reproducen las de PaymentConfirmationService, pero resolviendo
- * cadena y regla a la fecha de cada pago (no a la de hoy).
+ * Por defecto resuelve cadena y regla a la fecha de cada pago; con $currentRules usa las reglas
+ * vigentes al momento de revisar (para ventas anteriores a la vigencia de una regla).
  */
 class CommissionAuditService
 {
@@ -33,6 +33,7 @@ class CommissionAuditService
     private array $findings = [];
     private int $repairs = 0;
     private bool $repair = false;
+    private bool $currentRules = false;
     private ?Membership $actor = null;
     private string $tag = '';
     private array $names = [];
@@ -40,17 +41,18 @@ class CommissionAuditService
     public function __construct(private readonly ProspectStatusService $statusService) {}
 
     /**
-     * @return array{repair: bool, findings: list<array{section: string, level: string, message: string}>, repairs: int, errors: int, warnings: int}
+     * @return array{repair: bool, rules: string, findings: list<array{section: string, level: string, message: string}>, repairs: int, errors: int, warnings: int}
      */
-    public function review(SalesProspect $prospect, bool $repair, ?Membership $actor = null): array
+    public function review(SalesProspect $prospect, bool $repair, ?Membership $actor = null, bool $currentRules = false): array
     {
         $this->findings = [];
         $this->repairs = 0;
         $this->repair = $repair;
+        $this->currentRules = $currentRules;
         $this->actor = $actor;
         $this->names = [];
 
-        $work = function () use ($prospect, $repair, $actor) {
+        $work = function () use ($prospect, $repair, $actor, $currentRules) {
             $opportunities = $prospect->opportunities()
                 ->with('subscriptionPlan')
                 ->orderBy('id')
@@ -79,6 +81,7 @@ class CommissionAuditService
                     before: [],
                     after: [
                         'repairs' => $this->repairs,
+                        'rules' => $currentRules ? 'current' : 'payment',
                         'actions' => collect($this->findings)->where('level', 'repaired')->pluck('message')->values()->all(),
                     ],
                 );
@@ -89,6 +92,7 @@ class CommissionAuditService
 
         return [
             'repair' => $repair,
+            'rules' => $currentRules ? 'current' : 'payment',
             'findings' => $this->findings,
             'repairs' => $this->repairs,
             'errors' => count(array_filter($this->findings, fn ($f) => $f['level'] === 'error')),
@@ -318,6 +322,11 @@ class CommissionAuditService
             }
 
             foreach ($activeOriginals as $entry) {
+                // Los asientos generados con "reglas de hoy" son legítimos aunque la regla sea posterior al pago.
+                if (($entry->calculation_snapshot['rules_resolved_on'] ?? null) === 'review_date') {
+                    continue;
+                }
+
                 if (! in_array($entry->membership_id.'|'.$entry->entry_type, $expectedKeys, true)) {
                     $problems++;
                     $this->add('commissions', 'warning', sprintf(
@@ -330,16 +339,18 @@ class CommissionAuditService
         }
 
         if ($withoutRule !== []) {
-            $this->add(
-                'commissions',
-                $expectedCount === 0 ? 'warning' : 'info',
-                sprintf(
-                    'No hay regla de comisión vigente para el plan "%s" para: %s.%s',
+            $level = $expectedCount === 0 ? 'warning' : 'info';
+
+            foreach ($withoutRule as $roleLabel => $explanation) {
+                $this->add('commissions', $level, "Sin comisión para {$roleLabel}: {$explanation}");
+            }
+
+            if ($expectedCount === 0) {
+                $this->add('commissions', 'warning', sprintf(
+                    'Por eso la venta del plan "%s" no generó ninguna comisión.',
                     $opportunity->subscriptionPlan?->name ?? $opportunity->plan_id,
-                    implode(', ', array_keys($withoutRule)),
-                    $expectedCount === 0 ? ' Por eso esta venta no generó ninguna comisión.' : ' Esos eslabones no generan comisión.',
-                ),
-            );
+                ));
+            }
         }
 
         if ($problems === 0 && $expectedCount > 0) {
@@ -348,18 +359,22 @@ class CommissionAuditService
     }
 
     /**
-     * @param  array<string, bool>  $withoutRule  se llena por referencia con los roles sin regla
+     * @param  array<string, string>  $withoutRule  se llena por referencia: rol → por qué no se encontró regla
      * @return list<array<string, mixed>>
      */
     private function expectedEntries(Membership $seller, Opportunity $opportunity, Payment $payment, int $index, CarbonInterface $at, array &$withoutRule): array
     {
         $specs = [];
 
+        // Fecha con la que se busca la regla: la del pago, o la de hoy con "reglas de hoy".
+        $ruleDate = $this->currentRules ? now() : $at;
+
         foreach ($this->chainAsOf($seller, $at) as $membership) {
-            [$rule, $commissionPlan] = $this->resolveRule($membership, $opportunity->plan_id, $at);
+            [$rule, $commissionPlan] = $this->resolveRule($membership, $opportunity->plan_id, $ruleDate);
 
             if (! $rule) {
-                $withoutRule[self::ROLE_LABELS[$membership->role] ?? $membership->role] = true;
+                $roleLabel = self::ROLE_LABELS[$membership->role] ?? $membership->role;
+                $withoutRule[$roleLabel] ??= $this->explainMissingRule($membership, (int) $opportunity->plan_id, $ruleDate);
 
                 continue;
             }
@@ -419,6 +434,54 @@ class CommissionAuditService
         $rule = $commissionPlan->rules()->where('plan_id', $planId)->first();
 
         return [$rule, $rule ? $commissionPlan : null];
+    }
+
+    /** Explica, en una frase, por qué no se encontró regla para una membresía. */
+    private function explainMissingRule(Membership $membership, int $planId, CarbonInterface $ruleDate): string
+    {
+        $role = self::ROLE_LABELS[$membership->role] ?? $membership->role;
+
+        if (! $membership->market_id) {
+            return "la membresía de {$this->member($membership->id)} no tiene mercado asignado, así que no se puede buscar su plan de comisiones.";
+        }
+
+        $versions = CommissionPlan::query()
+            ->where('market_id', $membership->market_id)
+            ->where('role', $membership->role)
+            ->orderByDesc('version')
+            ->get();
+
+        if ($versions->isEmpty()) {
+            return "no existe ninguna versión de comisiones para el rol {$role} en el mercado de esa membresía (market_id {$membership->market_id}).";
+        }
+
+        $withRule = $versions->first(fn (CommissionPlan $version) => $version->rules()->where('plan_id', $planId)->exists());
+
+        if (! $withRule) {
+            return "las versiones de comisiones del rol {$role} no tienen ninguna regla para este plan.";
+        }
+
+        $date = $ruleDate->toDateString();
+
+        if ($withRule->effective_from->toDateString() > $date) {
+            return sprintf(
+                'la regla de %s empieza el %s, después de la fecha que se está usando (%s). Usa "Reglas de hoy" si quieres aplicarla a esta venta.',
+                $role,
+                $withRule->effective_from->format('d/m/Y'),
+                $ruleDate->format('d/m/Y'),
+            );
+        }
+
+        if ($withRule->effective_to && $withRule->effective_to->toDateString() < $date) {
+            return sprintf(
+                'la regla de %s terminó el %s, antes de la fecha que se está usando (%s).',
+                $role,
+                $withRule->effective_to->format('d/m/Y'),
+                $ruleDate->format('d/m/Y'),
+            );
+        }
+
+        return "no se encontró una versión vigente de {$role} para el {$ruleDate->format('d/m/Y')}.";
     }
 
     /**
@@ -483,7 +546,11 @@ class CommissionAuditService
             ];
         }
 
-        $snapshot += ['resolved_at' => now()->toIso8601String(), 'repaired_by_audit' => true];
+        $snapshot += [
+            'resolved_at' => now()->toIso8601String(),
+            'repaired_by_audit' => true,
+            'rules_resolved_on' => $this->currentRules ? 'review_date' : 'payment_date',
+        ];
 
         return CommissionLedger::create([
             'membership_id' => $membership->id,
@@ -495,7 +562,9 @@ class CommissionAuditService
             'amount_cents' => $spec['amount'],
             'currency' => $spec['type'] === 'activation' ? $sale->currency : $payment->currency,
             'calculation_snapshot' => $snapshot,
-            'note' => 'Generado por la revisión de comisiones.',
+            'note' => $this->currentRules
+                ? 'Generado por la revisión de comisiones con las reglas vigentes al momento de revisar.'
+                : 'Generado por la revisión de comisiones.',
             'created_by_membership_id' => $this->actor?->id,
         ]);
     }

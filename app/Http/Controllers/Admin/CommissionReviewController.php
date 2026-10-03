@@ -18,7 +18,7 @@ class CommissionReviewController extends Controller
         $repair = $request->input('mode') === 'repair';
 
         try {
-            $report = $this->audit->review($prospect, $repair, $request->user()->adminMembership());
+            $report = $this->audit->review($prospect, $repair, $request->user()->adminMembership(), $request->input('rules') === 'current');
         } catch (\Throwable $e) {
             report($e);
 

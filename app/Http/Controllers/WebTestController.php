@@ -23,7 +23,7 @@ class WebTestController extends Controller
             default => null,
         };
 
-        $menuMissing = ! filled(\App\Models\AgentProfile::where('organization_id', $organization->id)->value('menu'));
+        $menuMissing = ! filled(\App\Models\AgentProfile::findFor($organization)?->menu);
 
         return view('web_test.show', compact('organization', 'subscription', 'blockReason', 'menuMissing'));
     }

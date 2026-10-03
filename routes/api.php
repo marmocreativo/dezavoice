@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\ProspectAssignmentController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\RetellFunctionController;
 use App\Http\Controllers\Api\RetellInboundController;
+use App\Http\Controllers\Api\MenuPhotoController;
+use App\Http\Controllers\Api\ProspectAgentProfileController;
+use App\Http\Controllers\Api\ProspectContactController;
 use App\Http\Controllers\Api\RetellWebhookController;
 use App\Http\Middleware\VerifyRetellSignature;
 use App\Http\Controllers\Api\PaymentRefundController;
@@ -43,9 +46,13 @@ Route::middleware(VerifyRetellSignature::class)->group(function () {
     Route::post('/v1/webhooks/retell', [RetellWebhookController::class, 'handle']);
     Route::post('/v1/webhooks/retell/inbound', [RetellInboundController::class, 'handle']);
     Route::post('/v1/retell/functions/registrar-pedido', [RetellFunctionController::class, 'registrarPedido']);
+    Route::post('/v1/retell/functions/registrar-solicitud', [RetellFunctionController::class, 'registrarPedido']);
 });
 Route::post('/v1/auth/login', [AuthController::class, 'login']);
 Route::get('/v1/push/public-key', [DeviceTokenController::class, 'publicKey']);
+Route::get('/v1/menu-photos/{photo:uuid}/file', [MenuPhotoController::class, 'file'])
+    ->middleware('signed')
+    ->name('menu-photos.file');
 
 Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -67,6 +74,15 @@ Route::middleware(['auth:sanctum', 'resolve.membership'])->prefix('v1')->group(f
     Route::get('/prospects/{prospect:uuid}/activities', [ActivityController::class, 'index']);
     Route::post('/prospects/{prospect:uuid}/activities', [ActivityController::class, 'store']);
     Route::post('/prospects/{prospect:uuid}/issue-quote', [QuoteIssuanceController::class, 'store']);
+
+    Route::post('/prospects/{prospect:uuid}/contacts', [ProspectContactController::class, 'store']);
+    Route::patch('/contacts/{contact:uuid}', [ProspectContactController::class, 'update']);
+    Route::delete('/contacts/{contact:uuid}', [ProspectContactController::class, 'destroy']);
+
+    Route::get('/prospects/{prospect:uuid}/agent-profile', [ProspectAgentProfileController::class, 'show']);
+    Route::put('/prospects/{prospect:uuid}/agent-profile', [ProspectAgentProfileController::class, 'update']);
+    Route::post('/prospects/{prospect:uuid}/menu-photos', [MenuPhotoController::class, 'store'])->middleware('throttle:40,1');
+    Route::delete('/menu-photos/{photo:uuid}', [MenuPhotoController::class, 'destroy']);
 
     Route::get('/admin/users', [AdminUserController::class, 'index']);
     Route::patch('/admin/users/{user:uuid}', [AdminUserController::class, 'update']);

@@ -11,10 +11,13 @@ use App\Http\Controllers\Admin\PhoneNumberController;
 use App\Http\Controllers\Admin\PlanCommissionController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ProspectController;
+use App\Http\Controllers\Admin\ProspectDeletionController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TerritoryController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserDeletionController;
+use App\Http\Controllers\Admin\UserPasswordController;
 use App\Http\Controllers\Admin\UserRoleController;
 use App\Http\Controllers\WebTestController;
 use App\Http\Controllers\Auth\LoginController;
@@ -65,6 +68,10 @@ Route::middleware(['auth', 'admin.access'])
 
         Route::get('prospects', [ProspectController::class, 'index'])->name('prospects.index');
         Route::get('prospects/{prospect:uuid}', [ProspectController::class, 'show'])->name('prospects.show');
+        Route::get('prospects/{prospect:uuid}/delete', [ProspectDeletionController::class, 'confirm'])->name('prospects.delete');
+        Route::delete('prospects/{prospect:uuid}', [ProspectDeletionController::class, 'destroy'])
+            ->middleware('throttle:5,1')
+            ->name('prospects.destroy');
         Route::get('prospects/{prospect:uuid}/messages', [ClientMessageController::class, 'index'])->name('prospects.messages.index');
         Route::post('prospects/{prospect:uuid}/commissions/review', [CommissionReviewController::class, 'store'])->name('prospects.commissions.review');
 
@@ -87,6 +94,13 @@ Route::middleware(['auth', 'admin.access'])
         Route::get('users/{user:uuid}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('users/{user:uuid}', [UserController::class, 'update'])->name('users.update');
         Route::post('users/{user:uuid}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');
+        Route::get('users/{user:uuid}/delete', [UserDeletionController::class, 'confirm'])->name('users.delete');
+        Route::delete('users/{user:uuid}', [UserDeletionController::class, 'destroy'])
+            ->middleware('throttle:5,1')
+            ->name('users.destroy');
+        Route::post('users/{user:uuid}/password', [UserPasswordController::class, 'send'])
+            ->middleware('throttle:10,1')
+            ->name('users.password.send');
         Route::post('memberships/{membership:uuid}/retire', [UserRoleController::class, 'retire'])->name('memberships.retire');
 
         Route::get('markets/{market:uuid}/territories/create', [TerritoryController::class, 'create'])->name('markets.territories.create');

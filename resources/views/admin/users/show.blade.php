@@ -154,7 +154,19 @@
 
         {{-- Datos --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 class="text-base font-semibold text-slate-900">Cuenta</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-slate-900">Cuenta</h3>
+                <a href="{{ route('admin.users.delete', $user->uuid) }}" class="text-xs font-medium text-red-600 hover:text-red-800">Eliminar definitivamente…</a>
+            </div>
+
+            <form method="POST" action="{{ route('admin.users.password.send', $user->uuid) }}" class="mt-4"
+                  data-confirm="¿Enviar una contraseña nueva a {{ $user->email }}? La actual dejará de funcionar y se cerrarán sus sesiones abiertas.">
+                @csrf
+                <button type="submit" class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Enviar contraseña nueva por correo
+                </button>
+                <p class="mt-1.5 text-xs text-slate-500">Genera una temporal, la envía a su correo y le pide cambiarla al entrar.</p>
+            </form>
             <dl class="mt-4 space-y-3 text-sm">
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Correo</dt><dd class="truncate text-slate-800">{{ $user->email }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Alta</dt><dd class="text-slate-800">{{ $user->created_at?->format('d/m/Y') }}</dd></div>
